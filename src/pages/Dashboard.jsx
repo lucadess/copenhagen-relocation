@@ -45,21 +45,10 @@ export default function Dashboard({ data }) {
   const totalItems = data.decisions.length + data.tasks.length;
   const overallProgress = totalItems === 0 ? 0 : Math.round(((decidedCount + doneTasks) / totalItems) * 100);
 
-  const openTasks = data.tasks
+  const upcomingTasks = data.tasks
     .filter((t) => t.status !== "Done")
-    .sort((a, b) => (a.deadline || "9999-99-99").localeCompare(b.deadline || "9999-99-99"));
-  const todaysPriorities = openTasks.filter((t) => isOverdue(t.deadline)).slice(0, 3);
-  const upcomingTasks = openTasks.slice(0, 3);
-
-  const now = new Date();
-  const weekEnd = new Date(now.getTime() + 7 * 86400000);
-  const thisWeekTasks = data.tasks.filter((t) => {
-    if (!t.deadline) return false;
-    const d = new Date(t.deadline + "T00:00:00");
-    return d >= now && d <= weekEnd;
-  });
-  const thisWeekDone = thisWeekTasks.filter((t) => t.status === "Done").length;
-  const weekPct = thisWeekTasks.length === 0 ? 0 : Math.round((thisWeekDone / thisWeekTasks.length) * 100);
+    .sort((a, b) => (a.deadline || "9999-99-99").localeCompare(b.deadline || "9999-99-99"))
+    .slice(0, 3);
 
   const recentDecisions = [...data.decisions].slice(-3).reverse();
 
@@ -79,10 +68,6 @@ export default function Dashboard({ data }) {
           <div className="mt-stat-num">{daysLeft}</div>
           <div className="mt-stat-label">days to move day</div>
         </Card>
-        <Card className="mt-stat-card">
-          <div className="mt-stat-num">€{remaining.toLocaleString()}</div>
-          <div className="mt-stat-label">remaining of €{BASE_BUDGET.toLocaleString()}</div>
-        </Card>
       </div>
 
       <Card>
@@ -94,17 +79,6 @@ export default function Dashboard({ data }) {
       </Card>
 
       <div className="mt-snapshot-grid">
-        <Card className="mt-mini-card" style={{ "--mini-accent": "var(--accent-tasks)" }}>
-          <div className="mt-mini-card-label">Today's priorities</div>
-          {todaysPriorities.length === 0 && <div className="mt-empty">Nothing overdue — nice.</div>}
-          {todaysPriorities.map((t) => (
-            <div key={t.id} className="mt-priority-item" style={{ background: "none", padding: "4px 0" }}>
-              <span className="dot" />
-              <span className="title">{t.title}</span>
-            </div>
-          ))}
-        </Card>
-
         <Card className="mt-mini-card" style={{ "--mini-accent": "var(--accent-budget)" }}>
           <div className="mt-mini-card-label">Budget snapshot</div>
           <div className="mt-mini-card-value">€{remaining.toLocaleString()}</div>
@@ -123,37 +97,19 @@ export default function Dashboard({ data }) {
             </div>
           ))}
         </Card>
-      </div>
 
-      <div className="mt-snapshot-grid" style={{ gridTemplateColumns: "1fr" }}>
         <Card className="mt-mini-card" style={{ "--mini-accent": "var(--accent-tasks)" }}>
           <div className="mt-mini-card-label">Upcoming tasks</div>
           {upcomingTasks.length === 0 && <div className="mt-empty">No tasks yet — add one in Tasks.</div>}
-          <div className="mt-priority-list" style={{ marginTop: 6 }}>
-            {upcomingTasks.map((t) => (
-              <div key={t.id} className="mt-priority-item">
-                <span className="dot" />
-                <span className="title">{t.title}</span>
-                <span className="meta">{formatDate(t.deadline)}</span>
-              </div>
-            ))}
-          </div>
+          {upcomingTasks.map((t) => (
+            <div key={t.id} className="mt-priority-item" style={{ background: "none", padding: "4px 0" }}>
+              <span className="dot" style={isOverdue(t.deadline) ? { background: "#D14343" } : undefined} />
+              <span className="title">{t.title}</span>
+              <span className="meta">{isOverdue(t.deadline) ? "Overdue" : formatDate(t.deadline)}</span>
+            </div>
+          ))}
         </Card>
       </div>
-
-      <Card style={{ "--accent": "var(--accent-dashboard)" }}>
-        <h2 className="mt-card-title">This week</h2>
-        {thisWeekTasks.length === 0 ? (
-          <div className="mt-empty">No tasks due in the next 7 days.</div>
-        ) : (
-          <>
-            <ProgressBar pct={weekPct} />
-            <div className="mt-mini-card-sub" style={{ marginTop: 8 }}>
-              {thisWeekDone} of {thisWeekTasks.length} tasks done this week
-            </div>
-          </>
-        )}
-      </Card>
 
       <Card>
         <h2 className="mt-card-title">Timeline</h2>

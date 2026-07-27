@@ -42,23 +42,15 @@ export default function Budget({ data, update }) {
     <div className="mt-page" style={{ "--accent": "var(--accent-budget)" }}>
       <h1 className="mt-page-title">Budget</h1>
       <p className="mt-page-intro">
-        Total budget: <strong>€{BASE_BUDGET.toLocaleString()}</strong>, split across three buckets. Log real costs
-        as they come up, and any extra money added to the pool, both adjust the running total below.
+        Total budget: <strong>€{BASE_BUDGET.toLocaleString()}</strong>, split into{" "}
+        {BUCKETS.map((b, i) => (
+          <span key={b.key}>
+            {i > 0 && (i === BUCKETS.length - 1 ? ", and " : ", ")}
+            <strong>{b.label} (€{b.amount.toLocaleString()})</strong> — {b.desc}
+          </span>
+        ))}. Log real costs as they come up, and any extra money added to the pool, both adjust the running
+        total below.
       </p>
-
-      <div className="mt-bucket-row">
-        {BUCKETS.map((b) => {
-          const spent = data.budget.costs.filter((c) => c.category === b.key).reduce((s, c) => s + Number(c.amount || 0), 0);
-          return (
-            <Card key={b.key} className="mt-bucket-card">
-              <div className="mt-bucket-label">{b.label}</div>
-              <div className="mt-bucket-amount">€{b.amount.toLocaleString()}</div>
-              <div className="mt-bucket-desc">{b.desc}</div>
-              {spent > 0 && <div className="mt-bucket-spent">€{spent.toLocaleString()} logged</div>}
-            </Card>
-          );
-        })}
-      </div>
 
       <Card className="mt-remaining-card">
         <div className="mt-remaining-top">

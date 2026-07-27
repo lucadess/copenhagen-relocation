@@ -103,16 +103,20 @@ export default function Tasks({ data, update }) {
                 </div>
               ) : (
                 <>
-                  <span className="mt-actor-badge">{initials(t.actor)}</span>
-                  <div className="mt-task-main">
-                    <div className="mt-task-title">{t.title}</div>
-                    {t.description && <div className="mt-task-desc">{t.description}</div>}
+                  <div className="mt-task-header">
+                    <span className="mt-actor-badge">{initials(t.actor)}</span>
+                    <div className="mt-task-main">
+                      <div className="mt-task-title">{t.title}</div>
+                      {t.description && <div className="mt-task-desc">{t.description}</div>}
+                    </div>
                   </div>
-                  <span className="mt-badge">{t.category}</span>
-                  <span className="mt-badge" style={{ background: STATUS_STYLE[t.status].bg, color: STATUS_STYLE[t.status].fg }}>{t.status}</span>
-                  <span className={"mt-task-deadline" + (isOverdue(t) ? " overdue" : "")}>{formatDate(t.deadline)}</span>
-                  <button className="mt-icon-btn" onClick={() => setEditingId(t.id)}><Pencil size={14} /></button>
-                  <button className="mt-icon-btn" onClick={() => removeTask(t.id)}><Trash2 size={14} /></button>
+                  <div className="mt-task-meta">
+                    <span className="mt-badge">{t.category}</span>
+                    <span className="mt-badge" style={{ background: STATUS_STYLE[t.status].bg, color: STATUS_STYLE[t.status].fg }}>{t.status}</span>
+                    <span className={"mt-task-deadline" + (isOverdue(t) ? " overdue" : "")}>{formatDate(t.deadline)}</span>
+                    <button className="mt-icon-btn" onClick={() => setEditingId(t.id)}><Pencil size={14} /></button>
+                    <button className="mt-icon-btn" onClick={() => removeTask(t.id)}><Trash2 size={14} /></button>
+                  </div>
                 </>
               )}
             </div>

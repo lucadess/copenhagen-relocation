@@ -96,10 +96,15 @@ export default function Decisions({ data, update }) {
                 </div>
                 <div className="mt-option-grid">
                   {d.options.map((o) => (
-                    <div key={o.id} className={"mt-option-chip" + (d.finalDecisionId === o.id ? " chosen" : "")}>
+                    <button
+                      type="button"
+                      key={o.id}
+                      className={"mt-option-chip" + (d.finalDecisionId === o.id ? " chosen" : "")}
+                      onClick={() => set(d.id, { finalDecisionId: o.id })}
+                    >
                       {d.finalDecisionId === o.id ? <CheckCircle2 size={15} color="var(--accent)" /> : <Circle size={15} color="#D8D3CC" />}
                       {o.text}
-                    </div>
+                    </button>
                   ))}
                 </div>
                 {d.notes && <div className="mt-decision-notes">{d.notes}</div>}
