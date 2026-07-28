@@ -108,6 +108,25 @@ a { color: inherit; }
 .mt-sync-badge.on { color: #3E7A4B; background: #E7F3E9; }
 .mt-sync-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 
+.mt-auth-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 600; color: var(--muted);
+  background: var(--bg-secondary); border: none; border-radius: var(--radius-pill);
+  padding: 5px 11px; white-space: nowrap; cursor: pointer;
+}
+.mt-auth-badge.on { color: var(--accent-dashboard); background: color-mix(in srgb, var(--accent-dashboard) 14%, var(--bg-secondary)); }
+.mt-auth-badge:hover { color: var(--ink); }
+
+.mt-toast-wrap {
+  position: fixed; top: 16px; left: 0; right: 0; z-index: 200;
+  display: flex; justify-content: center; pointer-events: none; padding: 0 16px;
+}
+.mt-toast {
+  background: var(--ink); color: #fff; padding: 11px 20px; border-radius: var(--radius-pill);
+  font-size: 13px; font-weight: 600; box-shadow: var(--shadow-md); text-align: center;
+  pointer-events: auto; max-width: 90vw;
+}
+
 .mt-content-area {
   flex: 1;
   min-width: 0;
@@ -210,7 +229,7 @@ a { color: inherit; }
     font-weight: 600;
   }
   .mt-sidebar-item.active svg { color: var(--item-accent, var(--accent-dashboard)); }
-  .mt-sidebar-footer { margin-top: auto; padding-top: 16px; }
+  .mt-sidebar-footer { margin-top: auto; padding-top: 16px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
 
   .mt-topbar { display: none; }
   .mt-bottom-nav { display: none; }
@@ -483,11 +502,13 @@ input[type="date"].mt-input { max-width: 190px; }
 .mt-task-filters select { width: auto; }
 
 .mt-task-row {
-  padding: 18px 10px 18px 12px; border-bottom: 1px solid var(--bg-secondary);
-  border-left: 3px solid transparent; margin: 0 0 6px -4px; border-radius: var(--radius-sm);
-  transition: border-color 0.15s ease;
+  padding: 18px 14px 18px 12px; background: var(--card);
+  border: 1px solid var(--border); border-left: 3px solid transparent;
+  box-shadow: 0 3px 10px rgba(43, 37, 34, 0.10), 0 1px 2px rgba(43, 37, 34, 0.06);
+  margin: 0 0 12px -4px; border-radius: var(--radius-sm);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
-.mt-task-row:last-child { margin-bottom: 0; border-bottom: none; }
+.mt-task-row:last-child { margin-bottom: 0; }
 .mt-task-header { display: flex; align-items: flex-start; gap: 10px; }
 .mt-task-main { flex: 1; min-width: 160px; }
 .mt-task-title { font-weight: 600; font-size: 14px; }

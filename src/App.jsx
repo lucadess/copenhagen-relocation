@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./supabaseClient.js";
 import { storage, defaultData, STORAGE_KEY, TABLE, migrateLegacyTimeline } from "./lib/storage.js";
+import { getStoredAuth, setStoredAuth, checkCredentials } from "./lib/auth.js";
 import AppShell from "./components/AppShell.jsx";
+import Toast from "./components/Toast.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Budget from "./pages/Budget.jsx";
 import Decisions from "./pages/Decisions.jsx";
@@ -14,6 +16,8 @@ export default function App() {
   const [data, setData] = useState(null);
   const [loaded, setLoaded] = useState(false);
   const [tab, setTab] = useState("dashboard");
+  const [authed, setAuthed] = useState(getStoredAuth);
+  const [toast, setToast] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -64,7 +68,23 @@ export default function App() {
     }
   }
   function update(patch) {
+    if (!authed) {
+      setToast({ id: Date.now(), message: "You should be part of the MILU household to make changes." });
+      return false;
+    }
     persist({ ...data, ...(typeof patch === "function" ? patch(data) : patch) });
+    return true;
+  }
+
+  function login(username, password) {
+    if (!checkCredentials(username, password)) return false;
+    setAuthed(true);
+    setStoredAuth(true);
+    return true;
+  }
+  function logout() {
+    setAuthed(false);
+    setStoredAuth(false);
   }
 
   if (!loaded || !data) {
@@ -74,8 +94,11 @@ export default function App() {
   const Page = PAGES[tab];
 
   return (
-    <AppShell tab={tab} setTab={setTab} synced={!!supabase}>
-      <Page data={data} update={update} onNavigate={setTab} />
-    </AppShell>
+    <>
+      <AppShell tab={tab} setTab={setTab} synced={!!supabase} authed={authed} onLogin={login} onLogout={logout}>
+        <Page data={data} update={update} onNavigate={setTab} authed={authed} />
+      </AppShell>
+      <Toast toast={toast} onDone={() => setToast(null)} />
+    </>
   );
 }

@@ -3,7 +3,7 @@ import { Plus, Trash2, Pencil, Check } from "lucide-react";
 import Card from "../components/Card.jsx";
 import { BUCKETS, BASE_BUDGET, uid } from "../lib/storage.js";
 
-export default function Budget({ data, update }) {
+export default function Budget({ data, update, authed }) {
   const [costForm, setCostForm] = useState({ description: "", amount: "", category: "moveIn" });
   const [extraForm, setExtraForm] = useState({ description: "", amount: "" });
   const [editingCostId, setEditingCostId] = useState(null);
@@ -16,8 +16,8 @@ export default function Budget({ data, update }) {
 
   function addCost() {
     if (!costForm.description || !costForm.amount) return;
-    update({ budget: { ...data.budget, costs: [{ id: uid(), ...costForm }, ...data.budget.costs] } });
-    setCostForm({ description: "", amount: "", category: "moveIn" });
+    const ok = update({ budget: { ...data.budget, costs: [{ id: uid(), ...costForm }, ...data.budget.costs] } });
+    if (ok) setCostForm({ description: "", amount: "", category: "moveIn" });
   }
   function setCost(id, patch) {
     update({ budget: { ...data.budget, costs: data.budget.costs.map((c) => (c.id === id ? { ...c, ...patch } : c)) } });
@@ -28,8 +28,8 @@ export default function Budget({ data, update }) {
 
   function addExtra() {
     if (!extraForm.description || !extraForm.amount) return;
-    update({ budget: { ...data.budget, extras: [{ id: uid(), ...extraForm }, ...data.budget.extras] } });
-    setExtraForm({ description: "", amount: "" });
+    const ok = update({ budget: { ...data.budget, extras: [{ id: uid(), ...extraForm }, ...data.budget.extras] } });
+    if (ok) setExtraForm({ description: "", amount: "" });
   }
   function setExtra(id, patch) {
     update({ budget: { ...data.budget, extras: data.budget.extras.map((e) => (e.id === id ? { ...e, ...patch } : e)) } });
@@ -64,17 +64,21 @@ export default function Budget({ data, update }) {
       <div className="mt-two-col">
         <Card>
           <h2 className="mt-card-title">Costs</h2>
-          <div className="mt-form-row">
-            <input className="mt-input" placeholder="Description" value={costForm.description} onChange={(e) => setCostForm({ ...costForm, description: e.target.value })} />
-            <input className="mt-input mt-input-num" type="number" placeholder="Amount" value={costForm.amount} onChange={(e) => setCostForm({ ...costForm, amount: e.target.value })} />
-          </div>
-          <div className="mt-form-row">
-            <select className="mt-input" value={costForm.category} onChange={(e) => setCostForm({ ...costForm, category: e.target.value })}>
-              {BUCKETS.map((b) => <option key={b.key} value={b.key}>{b.label}</option>)}
-              <option value="other">Other</option>
-            </select>
-            <button className="mt-btn primary" onClick={addCost}><Plus size={14} /> Add</button>
-          </div>
+          {authed && (
+            <>
+              <div className="mt-form-row">
+                <input className="mt-input" placeholder="Description" value={costForm.description} onChange={(e) => setCostForm({ ...costForm, description: e.target.value })} />
+                <input className="mt-input mt-input-num" type="number" placeholder="Amount" value={costForm.amount} onChange={(e) => setCostForm({ ...costForm, amount: e.target.value })} />
+              </div>
+              <div className="mt-form-row">
+                <select className="mt-input" value={costForm.category} onChange={(e) => setCostForm({ ...costForm, category: e.target.value })}>
+                  {BUCKETS.map((b) => <option key={b.key} value={b.key}>{b.label}</option>)}
+                  <option value="other">Other</option>
+                </select>
+                <button className="mt-btn primary" onClick={addCost}><Plus size={14} /> Add</button>
+              </div>
+            </>
+          )}
 
           <div className="mt-list">
             {data.budget.costs.map((c) => (
@@ -101,8 +105,12 @@ export default function Budget({ data, update }) {
                       <div className="mt-muted">{BUCKETS.find((b) => b.key === c.category)?.label || "Other"}</div>
                     </div>
                     <div className="mt-item-amount negative">-€{Number(c.amount).toLocaleString()}</div>
-                    <button className="mt-icon-btn" onClick={() => setEditingCostId(c.id)}><Pencil size={14} /></button>
-                    <button className="mt-icon-btn" onClick={() => removeCost(c.id)}><Trash2 size={14} /></button>
+                    {authed && (
+                      <>
+                        <button className="mt-icon-btn" onClick={() => setEditingCostId(c.id)}><Pencil size={14} /></button>
+                        <button className="mt-icon-btn" onClick={() => removeCost(c.id)}><Trash2 size={14} /></button>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -113,11 +121,15 @@ export default function Budget({ data, update }) {
 
         <Card>
           <h2 className="mt-card-title">Extra budget</h2>
-          <div className="mt-form-row">
-            <input className="mt-input" placeholder="Description" value={extraForm.description} onChange={(e) => setExtraForm({ ...extraForm, description: e.target.value })} />
-            <input className="mt-input mt-input-num" type="number" placeholder="Amount" value={extraForm.amount} onChange={(e) => setExtraForm({ ...extraForm, amount: e.target.value })} />
-          </div>
-          <button className="mt-btn primary" onClick={addExtra}><Plus size={14} /> Add</button>
+          {authed && (
+            <>
+              <div className="mt-form-row">
+                <input className="mt-input" placeholder="Description" value={extraForm.description} onChange={(e) => setExtraForm({ ...extraForm, description: e.target.value })} />
+                <input className="mt-input mt-input-num" type="number" placeholder="Amount" value={extraForm.amount} onChange={(e) => setExtraForm({ ...extraForm, amount: e.target.value })} />
+              </div>
+              <button className="mt-btn primary" onClick={addExtra}><Plus size={14} /> Add</button>
+            </>
+          )}
 
           <div className="mt-list">
             {data.budget.extras.map((e) => (
@@ -133,8 +145,12 @@ export default function Budget({ data, update }) {
                   <div className="mt-item-row">
                     <div className="mt-item-main">{e.description}</div>
                     <div className="mt-item-amount positive">+€{Number(e.amount).toLocaleString()}</div>
-                    <button className="mt-icon-btn" onClick={() => setEditingExtraId(e.id)}><Pencil size={14} /></button>
-                    <button className="mt-icon-btn" onClick={() => removeExtra(e.id)}><Trash2 size={14} /></button>
+                    {authed && (
+                      <>
+                        <button className="mt-icon-btn" onClick={() => setEditingExtraId(e.id)}><Pencil size={14} /></button>
+                        <button className="mt-icon-btn" onClick={() => removeExtra(e.id)}><Trash2 size={14} /></button>
+                      </>
+                    )}
                   </div>
                 )}
               </div>

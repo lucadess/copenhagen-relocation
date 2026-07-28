@@ -4,7 +4,7 @@ import { Plus, Trash2, Pencil, Check, ExternalLink, Search, ChevronDown } from "
 import Card from "../components/Card.jsx";
 import { uid } from "../lib/storage.js";
 
-export default function Faq({ data, update }) {
+export default function Faq({ data, update, authed }) {
   const [editingId, setEditingId] = useState(null);
   const [openId, setOpenId] = useState(null);
   const [query, setQuery] = useState("");
@@ -15,9 +15,11 @@ export default function Faq({ data, update }) {
   }
   function add() {
     const newId = uid();
-    update({ faq: [...data.faq, { id: newId, question: "New question", answer: "", url: "" }] });
-    setEditingId(newId);
-    setOpenId(newId);
+    const ok = update({ faq: [...data.faq, { id: newId, question: "New question", answer: "", url: "" }] });
+    if (ok) {
+      setEditingId(newId);
+      setOpenId(newId);
+    }
   }
   function remove(id) {
     update({ faq: data.faq.filter((f) => f.id !== id) });
@@ -61,8 +63,12 @@ export default function Faq({ data, update }) {
                   <div className="mt-faq-question">
                     <span>{f.question}</span>
                     <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
-                      <button className="mt-icon-btn" onClick={() => setEditingId(f.id)}><Pencil size={14} /></button>
-                      <button className="mt-icon-btn" onClick={() => remove(f.id)}><Trash2 size={14} /></button>
+                      {authed && (
+                        <>
+                          <button className="mt-icon-btn" onClick={() => setEditingId(f.id)}><Pencil size={14} /></button>
+                          <button className="mt-icon-btn" onClick={() => remove(f.id)}><Trash2 size={14} /></button>
+                        </>
+                      )}
                       <motion.span
                         animate={{ rotate: isOpen ? 180 : 0 }}
                         transition={{ duration: 0.15 }}
@@ -102,7 +108,7 @@ export default function Faq({ data, update }) {
         })}
         {filtered.length === 0 && <div className="mt-empty">No matching entries.</div>}
       </div>
-      <button className="mt-btn primary" onClick={add}><Plus size={14} /> Add entry</button>
+      {authed && <button className="mt-btn primary" onClick={add}><Plus size={14} /> Add entry</button>}
     </div>
   );
 }

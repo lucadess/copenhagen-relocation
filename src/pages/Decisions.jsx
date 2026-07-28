@@ -3,7 +3,7 @@ import { Plus, Trash2, Pencil, Check, Circle, CheckCircle2 } from "lucide-react"
 import Card from "../components/Card.jsx";
 import { uid, formatDate, DECISION_STATUS_OPTIONS, STATUS_STYLE } from "../lib/storage.js";
 
-export default function Decisions({ data, update }) {
+export default function Decisions({ data, update, authed }) {
   const [editingId, setEditingId] = useState(null);
 
   function set(id, patch) {
@@ -11,13 +11,13 @@ export default function Decisions({ data, update }) {
   }
   function add() {
     const newId = uid();
-    update({
+    const ok = update({
       decisions: [...data.decisions, {
         id: newId, title: "New decision", deadline: "", status: "Open",
         options: [{ id: uid(), text: "Option A" }, { id: uid(), text: "Option B" }], finalDecisionId: null, notes: "",
       }],
     });
-    setEditingId(newId);
+    if (ok) setEditingId(newId);
   }
   function remove(id) {
     update({ decisions: data.decisions.filter((d) => d.id !== id) });
@@ -85,10 +85,12 @@ export default function Decisions({ data, update }) {
               <>
                 <div className="mt-decision-head">
                   <h2 className="mt-decision-title">{d.title}</h2>
-                  <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                    <button className="mt-icon-btn" onClick={() => setEditingId(d.id)}><Pencil size={14} /></button>
-                    <button className="mt-icon-btn" onClick={() => remove(d.id)}><Trash2 size={14} /></button>
-                  </div>
+                  {authed && (
+                    <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                      <button className="mt-icon-btn" onClick={() => setEditingId(d.id)}><Pencil size={14} /></button>
+                      <button className="mt-icon-btn" onClick={() => remove(d.id)}><Trash2 size={14} /></button>
+                    </div>
+                  )}
                 </div>
                 <div className="mt-decision-badges">
                   <span className="mt-badge">{formatDate(d.deadline)}</span>
@@ -113,7 +115,7 @@ export default function Decisions({ data, update }) {
           </Card>
         ))}
       </div>
-      <button className="mt-btn primary" onClick={add}><Plus size={14} /> Add decision</button>
+      {authed && <button className="mt-btn primary" onClick={add}><Plus size={14} /> Add decision</button>}
     </div>
   );
 }

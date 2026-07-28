@@ -13,22 +13,24 @@ function isOverdue(t) {
   return new Date(t.deadline + "T23:59:59") < new Date();
 }
 
-export default function Tasks({ data, update }) {
+export default function Tasks({ data, update, authed }) {
   const [editingId, setEditingId] = useState(null);
   const [statusFilter, setStatusFilter] = useState("All");
   const [categoryFilter, setCategoryFilter] = useState("All");
 
   function addTask() {
     const newId = uid();
-    update({
+    const ok = update({
       tasks: [...data.tasks, {
         id: newId, title: "New task", description: "", deadline: "", actor: "",
         category: TASK_CATEGORIES[0], status: "Open",
       }],
     });
-    setStatusFilter("All");
-    setCategoryFilter("All");
-    setEditingId(newId);
+    if (ok) {
+      setStatusFilter("All");
+      setCategoryFilter("All");
+      setEditingId(newId);
+    }
   }
   function setTask(id, patch) {
     update({ tasks: data.tasks.map((t) => (t.id === id ? { ...t, ...patch } : t)) });
@@ -109,10 +111,12 @@ export default function Tasks({ data, update }) {
                     </span>
                     <span className="mt-badge" style={{ background: STATUS_STYLE[t.status].bg, color: STATUS_STYLE[t.status].fg }}>{t.status}</span>
                     <span className={"mt-task-deadline" + (isOverdue(t) ? " overdue" : "")}>{formatDate(t.deadline)}</span>
-                    <div className="mt-task-actions">
-                      <button className="mt-icon-btn" onClick={() => setEditingId(t.id)}><Pencil size={14} /></button>
-                      <button className="mt-icon-btn" onClick={() => removeTask(t.id)}><Trash2 size={14} /></button>
-                    </div>
+                    {authed && (
+                      <div className="mt-task-actions">
+                        <button className="mt-icon-btn" onClick={() => setEditingId(t.id)}><Pencil size={14} /></button>
+                        <button className="mt-icon-btn" onClick={() => removeTask(t.id)}><Trash2 size={14} /></button>
+                      </div>
+                    )}
                   </div>
                 </>
               )}
@@ -121,7 +125,7 @@ export default function Tasks({ data, update }) {
           {filtered.length === 0 && <div className="mt-empty">No tasks match these filters.</div>}
         </div>
       </Card>
-      <button className="mt-btn primary" onClick={addTask}><Plus size={14} /> Add task</button>
+      {authed && <button className="mt-btn primary" onClick={addTask}><Plus size={14} /> Add task</button>}
     </div>
   );
 }
