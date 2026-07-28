@@ -4,26 +4,64 @@ import { Plus, Trash2, Pencil, Check, ExternalLink, Search, ChevronDown } from "
 import Card from "../components/Card.jsx";
 import { uid } from "../lib/storage.js";
 
+function FaqForm({ draft, onChange, onConfirm, onDelete }) {
+  return (
+    <div onClick={(e) => e.stopPropagation()}>
+      <div className="mt-form-row">
+        <input className="mt-input mt-input-strong" value={draft.question} onChange={(e) => onChange({ question: e.target.value })} />
+      </div>
+      <textarea className="mt-input mt-textarea" placeholder="Answer / note" value={draft.answer} onChange={(e) => onChange({ answer: e.target.value })} style={{ marginBottom: 8, marginTop: 8 }} />
+      <input className="mt-input" placeholder="Link (optional)" value={draft.url} onChange={(e) => onChange({ url: e.target.value })} />
+      <div className="mt-card-actions" style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 10 }}>
+        <button className="mt-icon-btn" onClick={onConfirm}><Check size={15} /></button>
+        <button className="mt-icon-btn" onClick={onDelete}><Trash2 size={15} /></button>
+      </div>
+    </div>
+  );
+}
+
 export default function Faq({ data, update, authed }) {
   const [editingId, setEditingId] = useState(null);
+  const [draft, setDraft] = useState(null);
+  const [isNew, setIsNew] = useState(false);
   const [openId, setOpenId] = useState(null);
   const [query, setQuery] = useState("");
   const reduceMotion = useReducedMotion();
 
-  function set(id, patch) {
-    update({ faq: data.faq.map((f) => (f.id === id ? { ...f, ...patch } : f)) });
+  function stopEditing() {
+    setEditingId(null);
+    setDraft(null);
+    setIsNew(false);
+  }
+
+  function startEdit(f) {
+    setEditingId(f.id);
+    setDraft({ ...f });
+    setIsNew(false);
   }
   function add() {
     const newId = uid();
-    const ok = update({ faq: [...data.faq, { id: newId, question: "New question", answer: "", url: "" }] });
-    if (ok) {
-      setEditingId(newId);
-      setOpenId(newId);
-    }
+    setEditingId(newId);
+    setIsNew(true);
+    setDraft({ id: newId, question: "New question", answer: "", url: "" });
+    setOpenId(newId);
+  }
+  function changeDraft(patch) {
+    setDraft((d) => ({ ...d, ...patch }));
+  }
+  function confirmEdit() {
+    const ok = isNew
+      ? update({ faq: [...data.faq, draft] })
+      : update({ faq: data.faq.map((f) => (f.id === editingId ? draft : f)) });
+    if (ok) stopEditing();
   }
   function remove(id) {
+    if (isNew && editingId === id) {
+      stopEditing();
+      return;
+    }
     update({ faq: data.faq.filter((f) => f.id !== id) });
-    if (editingId === id) setEditingId(null);
+    if (editingId === id) stopEditing();
   }
 
   const q = query.trim().toLowerCase();
@@ -42,22 +80,19 @@ export default function Faq({ data, update, authed }) {
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {isNew && draft && (
+          <Card className="mt-faq-item">
+            <FaqForm draft={draft} onChange={changeDraft} onConfirm={confirmEdit} onDelete={() => remove(draft.id)} />
+          </Card>
+        )}
+
         {filtered.map((f) => {
           const isOpen = openId === f.id;
+          const isEditingThis = editingId === f.id && !isNew;
           return (
-            <Card key={f.id} className="mt-faq-item" onClick={() => editingId !== f.id && setOpenId(isOpen ? null : f.id)}>
-              {editingId === f.id ? (
-                <div onClick={(e) => e.stopPropagation()}>
-                  <div className="mt-form-row">
-                    <input className="mt-input mt-input-strong" value={f.question} onChange={(e) => set(f.id, { question: e.target.value })} />
-                  </div>
-                  <textarea className="mt-input mt-textarea" placeholder="Answer / note" value={f.answer} onChange={(e) => set(f.id, { answer: e.target.value })} style={{ marginBottom: 8, marginTop: 8 }} />
-                  <input className="mt-input" placeholder="Link (optional)" value={f.url} onChange={(e) => set(f.id, { url: e.target.value })} />
-                  <div className="mt-card-actions" style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 10 }}>
-                    <button className="mt-icon-btn" onClick={() => setEditingId(null)}><Check size={15} /></button>
-                    <button className="mt-icon-btn" onClick={() => remove(f.id)}><Trash2 size={15} /></button>
-                  </div>
-                </div>
+            <Card key={f.id} className="mt-faq-item" onClick={() => !isEditingThis && setOpenId(isOpen ? null : f.id)}>
+              {isEditingThis ? (
+                <FaqForm draft={draft} onChange={changeDraft} onConfirm={confirmEdit} onDelete={() => remove(f.id)} />
               ) : (
                 <>
                   <div className="mt-faq-question">
@@ -65,7 +100,7 @@ export default function Faq({ data, update, authed }) {
                     <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
                       {authed && (
                         <>
-                          <button className="mt-icon-btn" onClick={() => setEditingId(f.id)}><Pencil size={14} /></button>
+                          <button className="mt-icon-btn" onClick={() => startEdit(f)}><Pencil size={14} /></button>
                           <button className="mt-icon-btn" onClick={() => remove(f.id)}><Trash2 size={14} /></button>
                         </>
                       )}
@@ -106,7 +141,7 @@ export default function Faq({ data, update, authed }) {
             </Card>
           );
         })}
-        {filtered.length === 0 && <div className="mt-empty">No matching entries.</div>}
+        {filtered.length === 0 && !isNew && <div className="mt-empty">No matching entries.</div>}
       </div>
       {authed && <button className="mt-btn primary" onClick={add}><Plus size={14} /> Add entry</button>}
     </div>

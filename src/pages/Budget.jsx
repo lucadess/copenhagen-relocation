@@ -7,7 +7,9 @@ export default function Budget({ data, update, authed }) {
   const [costForm, setCostForm] = useState({ description: "", amount: "", category: "moveIn" });
   const [extraForm, setExtraForm] = useState({ description: "", amount: "" });
   const [editingCostId, setEditingCostId] = useState(null);
+  const [costDraft, setCostDraft] = useState(null);
   const [editingExtraId, setEditingExtraId] = useState(null);
+  const [extraDraft, setExtraDraft] = useState(null);
 
   const totalCosts = data.budget.costs.reduce((s, c) => s + Number(c.amount || 0), 0);
   const totalExtras = data.budget.extras.reduce((s, e) => s + Number(e.amount || 0), 0);
@@ -19,11 +21,26 @@ export default function Budget({ data, update, authed }) {
     const ok = update({ budget: { ...data.budget, costs: [{ id: uid(), ...costForm }, ...data.budget.costs] } });
     if (ok) setCostForm({ description: "", amount: "", category: "moveIn" });
   }
-  function setCost(id, patch) {
-    update({ budget: { ...data.budget, costs: data.budget.costs.map((c) => (c.id === id ? { ...c, ...patch } : c)) } });
+  function startEditCost(c) {
+    setEditingCostId(c.id);
+    setCostDraft({ ...c });
+  }
+  function changeCostDraft(patch) {
+    setCostDraft((d) => ({ ...d, ...patch }));
+  }
+  function confirmCost() {
+    const ok = update({ budget: { ...data.budget, costs: data.budget.costs.map((c) => (c.id === editingCostId ? costDraft : c)) } });
+    if (ok) {
+      setEditingCostId(null);
+      setCostDraft(null);
+    }
   }
   function removeCost(id) {
     update({ budget: { ...data.budget, costs: data.budget.costs.filter((c) => c.id !== id) } });
+    if (editingCostId === id) {
+      setEditingCostId(null);
+      setCostDraft(null);
+    }
   }
 
   function addExtra() {
@@ -31,11 +48,26 @@ export default function Budget({ data, update, authed }) {
     const ok = update({ budget: { ...data.budget, extras: [{ id: uid(), ...extraForm }, ...data.budget.extras] } });
     if (ok) setExtraForm({ description: "", amount: "" });
   }
-  function setExtra(id, patch) {
-    update({ budget: { ...data.budget, extras: data.budget.extras.map((e) => (e.id === id ? { ...e, ...patch } : e)) } });
+  function startEditExtra(e) {
+    setEditingExtraId(e.id);
+    setExtraDraft({ ...e });
+  }
+  function changeExtraDraft(patch) {
+    setExtraDraft((d) => ({ ...d, ...patch }));
+  }
+  function confirmExtra() {
+    const ok = update({ budget: { ...data.budget, extras: data.budget.extras.map((e) => (e.id === editingExtraId ? extraDraft : e)) } });
+    if (ok) {
+      setEditingExtraId(null);
+      setExtraDraft(null);
+    }
   }
   function removeExtra(id) {
     update({ budget: { ...data.budget, extras: data.budget.extras.filter((e) => e.id !== id) } });
+    if (editingExtraId === id) {
+      setEditingExtraId(null);
+      setExtraDraft(null);
+    }
   }
 
   return (
@@ -86,15 +118,15 @@ export default function Budget({ data, update, authed }) {
                 {editingCostId === c.id ? (
                   <>
                     <div className="mt-form-row">
-                      <input className="mt-input" value={c.description} onChange={(e) => setCost(c.id, { description: e.target.value })} />
-                      <input className="mt-input mt-input-num" type="number" value={c.amount} onChange={(e) => setCost(c.id, { amount: e.target.value })} />
+                      <input className="mt-input" value={costDraft.description} onChange={(e) => changeCostDraft({ description: e.target.value })} />
+                      <input className="mt-input mt-input-num" type="number" value={costDraft.amount} onChange={(e) => changeCostDraft({ amount: e.target.value })} />
                     </div>
                     <div className="mt-form-row">
-                      <select className="mt-input" value={c.category} onChange={(e) => setCost(c.id, { category: e.target.value })}>
+                      <select className="mt-input" value={costDraft.category} onChange={(e) => changeCostDraft({ category: e.target.value })}>
                         {BUCKETS.map((b) => <option key={b.key} value={b.key}>{b.label}</option>)}
                         <option value="other">Other</option>
                       </select>
-                      <button className="mt-icon-btn" onClick={() => setEditingCostId(null)}><Check size={14} /></button>
+                      <button className="mt-icon-btn" onClick={confirmCost}><Check size={14} /></button>
                       <button className="mt-icon-btn" onClick={() => removeCost(c.id)}><Trash2 size={14} /></button>
                     </div>
                   </>
@@ -107,7 +139,7 @@ export default function Budget({ data, update, authed }) {
                     <div className="mt-item-amount negative">-€{Number(c.amount).toLocaleString()}</div>
                     {authed && (
                       <>
-                        <button className="mt-icon-btn" onClick={() => setEditingCostId(c.id)}><Pencil size={14} /></button>
+                        <button className="mt-icon-btn" onClick={() => startEditCost(c)}><Pencil size={14} /></button>
                         <button className="mt-icon-btn" onClick={() => removeCost(c.id)}><Trash2 size={14} /></button>
                       </>
                     )}
@@ -136,9 +168,9 @@ export default function Budget({ data, update, authed }) {
               <div key={e.id} className="mt-item">
                 {editingExtraId === e.id ? (
                   <div className="mt-form-row">
-                    <input className="mt-input" value={e.description} onChange={(ev) => setExtra(e.id, { description: ev.target.value })} />
-                    <input className="mt-input mt-input-num" type="number" value={e.amount} onChange={(ev) => setExtra(e.id, { amount: ev.target.value })} />
-                    <button className="mt-icon-btn" onClick={() => setEditingExtraId(null)}><Check size={14} /></button>
+                    <input className="mt-input" value={extraDraft.description} onChange={(ev) => changeExtraDraft({ description: ev.target.value })} />
+                    <input className="mt-input mt-input-num" type="number" value={extraDraft.amount} onChange={(ev) => changeExtraDraft({ amount: ev.target.value })} />
+                    <button className="mt-icon-btn" onClick={confirmExtra}><Check size={14} /></button>
                     <button className="mt-icon-btn" onClick={() => removeExtra(e.id)}><Trash2 size={14} /></button>
                   </div>
                 ) : (
@@ -147,7 +179,7 @@ export default function Budget({ data, update, authed }) {
                     <div className="mt-item-amount positive">+€{Number(e.amount).toLocaleString()}</div>
                     {authed && (
                       <>
-                        <button className="mt-icon-btn" onClick={() => setEditingExtraId(e.id)}><Pencil size={14} /></button>
+                        <button className="mt-icon-btn" onClick={() => startEditExtra(e)}><Pencil size={14} /></button>
                         <button className="mt-icon-btn" onClick={() => removeExtra(e.id)}><Trash2 size={14} /></button>
                       </>
                     )}
