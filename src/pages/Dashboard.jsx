@@ -112,20 +112,22 @@ export default function Dashboard({ data, onNavigate }) {
     <div className="mt-page" style={{ "--accent": "var(--accent-dashboard)" }}>
       <h1 className="mt-page-title">Dashboard</h1>
 
-      <div className="mt-stat-row">
-        <Card className="mt-stat-card">
-          <div className="mt-stat-num">{daysLeft}</div>
-          <div className="mt-stat-label">days to move day</div>
+      <div className="mt-top-row">
+        <div className="mt-stat-row">
+          <Card className="mt-stat-card">
+            <div className="mt-stat-num">{daysLeft}</div>
+            <div className="mt-stat-label">days to move day</div>
+          </Card>
+        </div>
+
+        <Card className="mt-progress-card">
+          <h2 className="mt-card-title">Overall progress</h2>
+          <ProgressBar pct={overallProgress} />
+          <div className="mt-mini-card-sub" style={{ marginTop: 8 }}>
+            {overallProgress}% of decisions and tasks resolved
+          </div>
         </Card>
       </div>
-
-      <Card>
-        <h2 className="mt-card-title">Overall progress</h2>
-        <ProgressBar pct={overallProgress} />
-        <div className="mt-mini-card-sub" style={{ marginTop: 8 }}>
-          {overallProgress}% of decisions and tasks resolved
-        </div>
-      </Card>
 
       <div className="mt-snapshot-grid">
         <Card className="mt-mini-card" style={{ "--mini-accent": "var(--accent-budget)" }}>

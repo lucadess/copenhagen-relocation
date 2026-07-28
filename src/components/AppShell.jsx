@@ -75,35 +75,29 @@ export default function AppShell({ tab, setTab, synced, authed, onLogin, onLogou
 
   return (
     <div className="mt-shell">
-      <aside className="mt-sidebar">
+      <header className="mt-topbar">
         <div className="mt-brand">Copenhagen Move</div>
-        <nav className="mt-sidebar-nav">
+
+        <nav className="mt-topnav">
           {NAV.map((n) => (
             <button
               key={n.id}
-              className={"mt-sidebar-item" + (tab === n.id ? " active" : "")}
+              className={"mt-topnav-item" + (tab === n.id ? " active" : "")}
               style={{ "--item-accent": n.accent }}
               onClick={() => setTab(n.id)}
             >
-              <n.icon size={17} /> {n.label}
+              <n.icon size={16} /> {n.label}
             </button>
           ))}
         </nav>
-        <div className="mt-sidebar-footer">
+
+        <div className="mt-topbar-actions">
           <SyncBadge synced={synced} />
           <AuthControl authed={authed} onLogin={onLogin} onLogout={onLogout} />
         </div>
-      </aside>
+      </header>
 
       <div className="mt-content-area">
-        <div className="mt-topbar">
-          <div className="mt-brand">Copenhagen Move</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <SyncBadge synced={synced} />
-            <AuthControl authed={authed} onLogin={onLogin} onLogout={onLogout} />
-          </div>
-        </div>
-
         <AnimatePresence mode="wait">
           <motion.div
             key={tab}

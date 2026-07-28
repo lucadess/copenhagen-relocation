@@ -29,9 +29,6 @@
   /* text color placed on top of a solid --accent fill; pages with a light
      accent (e.g. FAQ's butter yellow) override this to --ink for contrast */
   --on-accent: #fff;
-
-  --nav-width: 232px;
-  --bottom-nav-height: 64px;
 }
 
 /* ============================================================== */
@@ -70,22 +67,25 @@ a { color: inherit; }
 
 .mt-shell {
   display: flex;
+  flex-direction: column;
   min-height: 100vh;
   max-width: 1400px;
   margin: 0 auto;
-}
-
-.mt-sidebar {
-  display: none;
 }
 
 .mt-topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
   padding: 16px 18px;
   background: var(--bg);
 }
+
+.mt-topnav { display: none; }
+
+.mt-topbar-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
 .mt-brand {
   font-family: var(--font-heading);
@@ -193,27 +193,22 @@ a { color: inherit; }
 @media (min-width: 900px) {
   .mt-shell { padding: 20px; gap: 20px; }
 
-  .mt-sidebar {
-    display: flex;
-    flex-direction: column;
-    width: var(--nav-width);
-    flex-shrink: 0;
+  .mt-topbar {
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 22px 16px;
+    padding: 12px 20px;
     box-shadow: var(--shadow-sm);
-    height: fit-content;
     position: sticky;
     top: 20px;
+    z-index: 30;
   }
-  .mt-sidebar .mt-brand { padding: 0 8px; margin-bottom: 22px; }
-  .mt-sidebar-nav { display: flex; flex-direction: column; gap: 4px; }
-  .mt-sidebar-item {
+  .mt-topnav { display: flex; gap: 3px; flex: 1; justify-content: center; }
+  .mt-topnav-item {
     display: flex;
     align-items: center;
-    gap: 11px;
-    padding: 11px 12px;
+    gap: 8px;
+    padding: 9px 15px;
     border-radius: var(--radius-sm);
     background: none;
     border: none;
@@ -221,21 +216,19 @@ a { color: inherit; }
     font-weight: 500;
     color: var(--muted);
     cursor: pointer;
-    text-align: left;
+    white-space: nowrap;
   }
-  .mt-sidebar-item.active {
+  .mt-topnav-item.active {
     color: var(--ink);
     background: color-mix(in srgb, var(--item-accent, var(--accent-dashboard)) 16%, transparent);
     font-weight: 600;
   }
-  .mt-sidebar-item.active svg { color: var(--item-accent, var(--accent-dashboard)); }
-  .mt-sidebar-footer { margin-top: auto; padding-top: 16px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+  .mt-topnav-item.active svg { color: var(--item-accent, var(--accent-dashboard)); }
 
-  .mt-topbar { display: none; }
   .mt-bottom-nav { display: none; }
 
   .mt-content-area { padding: 0; }
-  .mt-page { padding-top: 6px; }
+  .mt-page { padding-top: 6px; max-width: 1360px; }
   .mt-page-title { font-size: 38px; }
 }
 
@@ -370,6 +363,10 @@ input[type="date"].mt-input { max-width: 190px; }
 /* Dashboard                                                        */
 /* ============================================================== */
 
+.mt-top-row { display: flex; flex-direction: column; gap: 12px; }
+.mt-top-row > .mt-stat-row { margin: 0; }
+.mt-progress-card { flex: 1; }
+
 .mt-snapshot-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
 .mt-mini-card {
   --accent: var(--mini-accent, var(--accent-dashboard));
@@ -428,7 +425,10 @@ input[type="date"].mt-input { max-width: 190px; }
   row-gap: 3px;
   margin-top: 4px;
 }
-.mt-gantt-corner { grid-column: 1; }
+.mt-gantt-corner {
+  grid-column: 1; position: sticky; left: 0; z-index: 11;
+  background: var(--card); box-shadow: 4px 0 6px -4px rgba(43, 37, 34, 0.12);
+}
 .mt-gantt-header { grid-column: 2; display: grid; grid-template-columns: repeat(7, 1fr); padding-bottom: 8px; }
 .mt-gantt-month-label {
   font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
@@ -437,33 +437,35 @@ input[type="date"].mt-input { max-width: 190px; }
 .mt-gantt-month-label.current { color: var(--accent-dashboard); }
 .mt-gantt-row { display: contents; }
 .mt-gantt-row-label {
-  grid-column: 1; text-align: left; background: none; border: none; cursor: pointer;
+  grid-column: 1; text-align: left; background: var(--card); border: none; cursor: pointer;
   font-size: 12px; font-weight: 500; color: var(--ink); padding: 6px 10px 6px 0;
   line-height: 1.25; align-self: center;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
   overflow: hidden; text-overflow: ellipsis;
+  position: sticky; left: 0; z-index: 10;
+  box-shadow: 4px 0 6px -4px rgba(43, 37, 34, 0.12);
 }
 .mt-gantt-row-label:hover { color: var(--accent-dashboard); text-decoration: underline; }
 .mt-gantt-row-track {
   grid-column: 2; position: relative; display: grid; grid-template-columns: repeat(7, 1fr);
-  min-height: 44px;
+  min-height: 50px;
 }
 .mt-gantt-cell { border-left: 1px solid var(--bg-secondary); }
 .mt-gantt-cell:last-child { border-right: 1px solid var(--bg-secondary); }
 .mt-gantt-bar {
-  position: absolute; top: 50%; transform: translateY(-50%); height: 20px;
-  border: none; border-radius: 5px; cursor: pointer; color: #fff;
-  font-size: 10.5px; font-weight: 600; padding: 0 8px; text-align: left;
+  position: absolute; top: 50%; transform: translateY(-50%); height: 28px;
+  border: none; border-radius: 6px; cursor: pointer; color: #fff;
+  font-size: 11.5px; font-weight: 600; padding: 0 10px; text-align: left;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   transition: filter 0.15s ease;
 }
 .mt-gantt-bar:hover { filter: brightness(0.92); }
 .mt-gantt-milestone {
-  position: absolute; top: 50%; width: 12px; height: 12px;
-  transform: translate(-50%, -50%) rotate(45deg); border: none; border-radius: 2px; cursor: pointer;
+  position: absolute; top: 50%; width: 17px; height: 17px;
+  transform: translate(-50%, -50%) rotate(45deg); border: none; border-radius: 3px; cursor: pointer;
   transition: filter 0.15s ease;
 }
-.mt-gantt-milestone.square { transform: translate(-50%, -50%) rotate(0deg); border-radius: 3px; }
+.mt-gantt-milestone.square { transform: translate(-50%, -50%) rotate(0deg); border-radius: 4px; }
 .mt-gantt-milestone:hover { filter: brightness(0.85); }
 .mt-gantt-today-line {
   position: absolute; top: 0; bottom: 0; width: 2px; background: var(--accent-dashboard);
@@ -474,6 +476,10 @@ input[type="date"].mt-input { max-width: 190px; }
   .mt-roadmap { display: none; }
   .mt-gantt-wrap { display: block; overflow-x: auto; }
   .mt-gantt { min-width: 640px; }
+
+  .mt-top-row { flex-direction: row; align-items: stretch; }
+  .mt-top-row > .mt-stat-row { flex: 0 0 240px; }
+  .mt-top-row > .mt-stat-row > .mt-stat-card { height: 100%; flex: 1; }
 }
 
 @media (min-width: 640px) {
