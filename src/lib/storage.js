@@ -121,17 +121,17 @@ export const defaultData = {
   ],
   budget: { costs: [], extras: [] },
   tasks: [
-    { id: "g1", title: "Research relocation options & DK rental market", description: "", actor: "", category: "Housing", status: "Open", deadline: "2026-09-30" },
-    { id: "g2", title: "Decide: relocation service vs. DIY", description: "", actor: "", category: "Housing", status: "Open", deadline: "2026-09-30" },
-    { id: "g3", title: "NL lease notice & DK contract talks", description: "", actor: "", category: "Admin", status: "Open", deadline: "2026-10-31" },
-    { id: "g4", title: "Midori's Copenhagen job search", description: "", actor: "Midori", category: "Career", status: "Open", deadline: "2027-02-28" },
-    { id: "g5", title: "Moving company quotes & booking", description: "", actor: "", category: "Moving", status: "Open", deadline: "2026-11-30" },
-    { id: "g6", title: "Apartment hunting & applications", description: "", actor: "", category: "Housing", status: "Open", deadline: "2026-12-31" },
-    { id: "g7", title: "Sign Copenhagen lease", description: "", actor: "", category: "Housing", status: "Open", deadline: "2026-12-31" },
-    { id: "g8", title: "NL deregistration & utilities cancellation", description: "", actor: "", category: "Admin", status: "Open", deadline: "2026-12-31" },
-    { id: "g9", title: "Packing", description: "", actor: "", category: "Moving", status: "Open", deadline: "2026-12-31" },
-    { id: "g10", title: "Move + CPR / MitID / tax / bank", description: "", actor: "", category: "Admin", status: "Open", deadline: "2027-01-31" },
-    { id: "g11", title: "Settle in & buffer", description: "", actor: "", category: "Admin", status: "Open", deadline: "2027-02-28" },
+    { id: "g1", title: "Research relocation options & DK rental market", description: "", actor: "", category: "Housing", status: "Open", startDate: "2026-08-01", deadline: "2026-09-30" },
+    { id: "g2", title: "Decide: relocation service vs. DIY", description: "", actor: "", category: "Housing", status: "Open", startDate: "", deadline: "2026-09-30" },
+    { id: "g3", title: "NL lease notice & DK contract talks", description: "", actor: "", category: "Admin", status: "Open", startDate: "2026-08-01", deadline: "2026-10-31" },
+    { id: "g4", title: "Midori's Copenhagen job search", description: "", actor: "Midori", category: "Career", status: "Open", startDate: "2026-09-01", deadline: "2027-02-28" },
+    { id: "g5", title: "Moving company quotes & booking", description: "", actor: "", category: "Moving", status: "Open", startDate: "2026-10-01", deadline: "2026-11-30" },
+    { id: "g6", title: "Apartment hunting & applications", description: "", actor: "", category: "Housing", status: "Open", startDate: "2026-11-01", deadline: "2026-12-31" },
+    { id: "g7", title: "Sign Copenhagen lease", description: "", actor: "", category: "Housing", status: "Open", startDate: "", deadline: "2026-12-31" },
+    { id: "g8", title: "NL deregistration & utilities cancellation", description: "", actor: "", category: "Admin", status: "Open", startDate: "", deadline: "2026-12-31" },
+    { id: "g9", title: "Packing", description: "", actor: "", category: "Moving", status: "Open", startDate: "", deadline: "2026-12-31" },
+    { id: "g10", title: "Move + CPR / MitID / tax / bank", description: "", actor: "", category: "Admin", status: "Open", startDate: "", deadline: "2027-01-31" },
+    { id: "g11", title: "Settle in & buffer", description: "", actor: "", category: "Admin", status: "Open", startDate: "", deadline: "2027-02-28" },
   ],
   faq: [
     { id: "f1", question: "How do we get a CPR number?", answer: "Register your address, then apply in person at Borgerservice / International Citizen Service.", url: "https://icitizen.dk" },
@@ -188,4 +188,15 @@ export function formatDate(str) {
   const d = new Date(str + "T00:00:00");
   if (Number.isNaN(d.getTime())) return str;
   return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
+
+export function formatDateRange(startStr, endStr) {
+  if (!startStr) return formatDate(endStr);
+  const start = new Date(startStr + "T00:00:00");
+  const end = new Date(endStr + "T00:00:00");
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return formatDate(endStr);
+  const sameYear = start.getFullYear() === end.getFullYear();
+  const startFmt = start.toLocaleDateString(undefined, { month: "short", day: "numeric", year: sameYear ? undefined : "numeric" });
+  const endFmt = end.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  return startFmt + " – " + endFmt;
 }

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Plus, Trash2, Pencil, Check } from "lucide-react";
 import Card from "../components/Card.jsx";
-import { uid, formatDate, TASK_STATUS_OPTIONS, TASK_CATEGORIES, TASK_CATEGORY_COLORS, STATUS_STYLE } from "../lib/storage.js";
+import { uid, formatDateRange, TASK_STATUS_OPTIONS, TASK_CATEGORIES, TASK_CATEGORY_COLORS, STATUS_STYLE } from "../lib/storage.js";
 
 function initials(name) {
   if (!name) return "?";
@@ -22,7 +22,7 @@ export default function Tasks({ data, update, authed }) {
     const newId = uid();
     const ok = update({
       tasks: [...data.tasks, {
-        id: newId, title: "New task", description: "", deadline: "", actor: "",
+        id: newId, title: "New task", description: "", startDate: "", deadline: "", actor: "",
         category: TASK_CATEGORIES[0], status: "Open",
       }],
     });
@@ -80,7 +80,16 @@ export default function Tasks({ data, update, authed }) {
                     <textarea className="mt-input mt-textarea" value={t.description} onChange={(e) => setTask(t.id, { description: e.target.value })} placeholder="Description (optional)" />
                   </div>
                   <div className="mt-form-row">
-                    <input className="mt-input" type="date" value={t.deadline} onChange={(e) => setTask(t.id, { deadline: e.target.value })} />
+                    <div style={{ flex: 1 }}>
+                      <label className="mt-field-label">Start date (optional)</label>
+                      <input className="mt-input" type="date" value={t.startDate || ""} onChange={(e) => setTask(t.id, { startDate: e.target.value })} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label className="mt-field-label">Deadline</label>
+                      <input className="mt-input" type="date" value={t.deadline} onChange={(e) => setTask(t.id, { deadline: e.target.value })} />
+                    </div>
+                  </div>
+                  <div className="mt-form-row">
                     <select className="mt-input" value={t.category} onChange={(e) => setTask(t.id, { category: e.target.value })}>
                       {TASK_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
                     </select>
@@ -110,7 +119,7 @@ export default function Tasks({ data, update, authed }) {
                       {t.category}
                     </span>
                     <span className="mt-badge" style={{ background: STATUS_STYLE[t.status].bg, color: STATUS_STYLE[t.status].fg }}>{t.status}</span>
-                    <span className={"mt-task-deadline" + (isOverdue(t) ? " overdue" : "")}>{formatDate(t.deadline)}</span>
+                    <span className={"mt-task-deadline" + (isOverdue(t) ? " overdue" : "")}>{formatDateRange(t.startDate, t.deadline)}</span>
                     {authed && (
                       <div className="mt-task-actions">
                         <button className="mt-icon-btn" onClick={() => setEditingId(t.id)}><Pencil size={14} /></button>

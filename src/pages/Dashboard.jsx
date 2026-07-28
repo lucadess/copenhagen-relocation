@@ -4,7 +4,7 @@ import { ListChecks, Circle, CheckCircle2 } from "lucide-react";
 import Card from "../components/Card.jsx";
 import Modal from "../components/Modal.jsx";
 import {
-  MOVE_DAY, BASE_BUDGET, MONTHS, TASK_CATEGORY_COLORS, formatDate, monthIndexForDate,
+  MOVE_DAY, BASE_BUDGET, MONTHS, TASK_CATEGORY_COLORS, formatDate, formatDateRange, monthIndexForDate,
   STATUS_STYLE,
 } from "../lib/storage.js";
 
@@ -20,6 +20,21 @@ function isOverdue(deadline) {
 function currentMonthIndex() {
   const now = new Date();
   return MONTHS.findIndex((m) => m.yearNum === now.getFullYear() && m.monthIndex === now.getMonth());
+}
+
+// Gantt geometry: the whole 7-month window expressed as a day count, so bars
+// can be positioned with day-level precision instead of snapping to months.
+const TIMELINE_START = new Date(MONTHS[0].yearNum, MONTHS[0].monthIndex, 1);
+const LAST_MONTH = MONTHS[MONTHS.length - 1];
+const TIMELINE_END = new Date(LAST_MONTH.yearNum, LAST_MONTH.monthIndex + 1, 0);
+const TIMELINE_DAYS = Math.round((TIMELINE_END - TIMELINE_START) / 86400000) + 1;
+
+function dateToOffset(dateStr) {
+  const d = new Date(dateStr + "T00:00:00");
+  return Math.round((d - TIMELINE_START) / 86400000);
+}
+function offsetToPct(offset) {
+  return (offset / TIMELINE_DAYS) * 100;
 }
 
 function ProgressBar({ pct }) {
@@ -59,13 +74,34 @@ export default function Dashboard({ data, onNavigate }) {
   const recentDecisions = [...data.decisions].slice(-3).reverse();
 
   const curMonthIdx = currentMonthIndex();
+
+  const relevantDecisions = data.decisions.filter((d) => monthIndexForDate(d.deadline) !== -1);
+  const relevantTasks = data.tasks.filter((t) => monthIndexForDate(t.deadline) !== -1);
+  const hasTimelineItems = relevantDecisions.length > 0 || relevantTasks.length > 0;
+
   const monthGroups = MONTHS.map((m, i) => ({
     month: m,
     idx: i,
     isCurrent: i === curMonthIdx,
-    decisionsHere: data.decisions.filter((d) => monthIndexForDate(d.deadline) === i),
-    tasksHere: data.tasks.filter((t) => monthIndexForDate(t.deadline) === i),
+    decisionsHere: relevantDecisions.filter((d) => monthIndexForDate(d.deadline) === i),
+    tasksHere: relevantTasks.filter((t) => monthIndexForDate(t.deadline) === i),
   })).filter((g) => g.decisionsHere.length > 0 || g.tasksHere.length > 0);
+
+  const todayOffset = dateToOffset(new Date().toISOString().slice(0, 10));
+  const todayPct = todayOffset >= 0 && todayOffset < TIMELINE_DAYS ? offsetToPct(todayOffset) : null;
+
+  const ganttItems = [
+    ...relevantDecisions.map((d) => {
+      const offset = dateToOffset(d.deadline);
+      return { key: "d" + d.id, type: "decision", item: d, milestone: true, startOffset: offset, endOffset: offset, color: "var(--accent-decisions)" };
+    }),
+    ...relevantTasks.map((t) => {
+      const endOffset = dateToOffset(t.deadline);
+      const hasStart = !!t.startDate;
+      const startOffset = hasStart ? Math.min(dateToOffset(t.startDate), endOffset) : endOffset;
+      return { key: "t" + t.id, type: "task", item: t, milestone: !hasStart, startOffset, endOffset, color: TASK_CATEGORY_COLORS[t.category] };
+    }),
+  ].sort((a, b) => a.startOffset - b.startOffset || a.endOffset - b.endOffset);
 
   function openInPage(page) {
     setModal(null);
@@ -127,7 +163,7 @@ export default function Dashboard({ data, onNavigate }) {
       <Card>
         <h2 className="mt-card-title">Timeline</h2>
         <p className="mt-page-intro" style={{ margin: "-6px 0 0" }}>
-          Every decision and task with a deadline, laid out by month. Click one to see details or jump to it.
+          Every decision and task with a deadline, laid out across the move. Click one to see details or jump to it.
         </p>
         <div className="mt-legend">
           {Object.entries(TASK_CATEGORY_COLORS).map(([label, color]) => (
@@ -135,48 +171,112 @@ export default function Dashboard({ data, onNavigate }) {
           ))}
           <div className="mt-legend-item"><span className="mt-legend-dot" style={{ background: "var(--accent-decisions)" }} />Decisions</div>
         </div>
-        <div className="mt-roadmap">
-          {monthGroups.map((g) => (
-            <div key={g.idx}>
-              <div className="mt-roadmap-month">
-                {g.month.label} '{g.month.year}{g.isCurrent && <span className="mt-roadmap-today"> · today</span>}
-              </div>
 
-              {g.decisionsHere.map((d) => (
-                <button
-                  key={d.id}
-                  type="button"
-                  className="mt-roadmap-entry"
-                  style={{ "--entry-accent": "var(--accent-decisions)" }}
-                  onClick={() => setModal({ type: "decision", item: d })}
-                >
-                  <ListChecks size={15} className="mt-roadmap-marker" />
-                  <div>
-                    <div className="mt-roadmap-label">{d.title}</div>
-                    <div className="mt-roadmap-entry-tag">Decision · {d.status}</div>
-                  </div>
-                </button>
-              ))}
+        {!hasTimelineItems && <div className="mt-empty">No decisions or tasks with dates yet.</div>}
 
-              {g.tasksHere.map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  className="mt-roadmap-entry"
-                  style={{ "--entry-accent": TASK_CATEGORY_COLORS[t.category] }}
-                  onClick={() => setModal({ type: "task", item: t })}
-                >
-                  <div className="mt-roadmap-marker"><div className="mt-roadmap-dot" style={{ background: TASK_CATEGORY_COLORS[t.category] }} /></div>
-                  <div>
-                    <div className="mt-roadmap-label">{t.title}</div>
-                    <div className="mt-roadmap-entry-tag">{t.category} · {t.status}</div>
+        {hasTimelineItems && (
+          <>
+            {/* Mobile / narrow screens: vertical roadmap grouped by month */}
+            <div className="mt-roadmap">
+              {monthGroups.map((g) => (
+                <div key={g.idx}>
+                  <div className="mt-roadmap-month">
+                    {g.month.label} '{g.month.year}{g.isCurrent && <span className="mt-roadmap-today"> · today</span>}
                   </div>
-                </button>
+
+                  {g.decisionsHere.map((d) => (
+                    <button
+                      key={d.id}
+                      type="button"
+                      className="mt-roadmap-entry"
+                      style={{ "--entry-accent": "var(--accent-decisions)" }}
+                      onClick={() => setModal({ type: "decision", item: d })}
+                    >
+                      <ListChecks size={15} className="mt-roadmap-marker" />
+                      <div>
+                        <div className="mt-roadmap-label">{d.title}</div>
+                        <div className="mt-roadmap-entry-tag">Decision · {d.status}</div>
+                      </div>
+                    </button>
+                  ))}
+
+                  {g.tasksHere.map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      className="mt-roadmap-entry"
+                      style={{ "--entry-accent": TASK_CATEGORY_COLORS[t.category] }}
+                      onClick={() => setModal({ type: "task", item: t })}
+                    >
+                      <div className="mt-roadmap-marker"><div className="mt-roadmap-dot" style={{ background: TASK_CATEGORY_COLORS[t.category] }} /></div>
+                      <div>
+                        <div className="mt-roadmap-label">{t.title}</div>
+                        <div className="mt-roadmap-entry-tag">{t.category} · {t.status}</div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
               ))}
             </div>
-          ))}
-          {monthGroups.length === 0 && <div className="mt-empty">No decisions or tasks with dates yet.</div>}
-        </div>
+
+            {/* Wider screens: Gantt-style timeline with real day-level positioning */}
+            <div className="mt-gantt-wrap">
+              <div className="mt-gantt">
+                <div className="mt-gantt-corner" />
+                <div className="mt-gantt-header">
+                  {MONTHS.map((m, i) => (
+                    <div key={i} className={"mt-gantt-month-label" + (i === curMonthIdx ? " current" : "")}>{m.label} '{m.year}</div>
+                  ))}
+                </div>
+
+                {ganttItems.map((g) => {
+                  const clampedStart = Math.max(0, g.startOffset);
+                  const clampedEnd = Math.min(TIMELINE_DAYS - 1, g.endOffset);
+                  const leftPct = offsetToPct(clampedStart);
+                  const widthPct = Math.max(offsetToPct(clampedEnd - clampedStart + 1), 1.4);
+                  const pointPct = offsetToPct(clampedEnd);
+                  const onClick = () => setModal({ type: g.type, item: g.item });
+
+                  return (
+                    <div className="mt-gantt-row" key={g.key}>
+                      <button type="button" className="mt-gantt-row-label" onClick={onClick} title={g.item.title}>
+                        {g.item.title}
+                      </button>
+                      <div className="mt-gantt-row-track">
+                        {MONTHS.map((_, mi) => <div key={mi} className="mt-gantt-cell" />)}
+                        {g.milestone ? (
+                          <button
+                            type="button"
+                            className={"mt-gantt-milestone" + (g.type === "task" ? " square" : "")}
+                            style={{ left: pointPct + "%", background: g.color }}
+                            onClick={onClick}
+                            title={g.item.title}
+                          />
+                        ) : (
+                          <button
+                            type="button"
+                            className="mt-gantt-bar"
+                            style={{ left: leftPct + "%", width: widthPct + "%", background: g.color }}
+                            onClick={onClick}
+                          >
+                            {g.item.title}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {todayPct !== null && (
+                  <div
+                    className="mt-gantt-today-line"
+                    style={{ left: `calc(var(--gantt-label-w) + (100% - var(--gantt-label-w)) * ${todayPct / 100})` }}
+                  />
+                )}
+              </div>
+            </div>
+          </>
+        )}
       </Card>
 
       <Modal
@@ -213,7 +313,7 @@ export default function Dashboard({ data, onNavigate }) {
             <div className="mt-decision-badges" style={{ marginTop: 10 }}>
               <span className="mt-badge" style={{ background: `color-mix(in srgb, ${TASK_CATEGORY_COLORS[modal.item.category]} 18%, white)`, color: TASK_CATEGORY_COLORS[modal.item.category] }}>{modal.item.category}</span>
               <span className="mt-badge" style={{ background: STATUS_STYLE[modal.item.status].bg, color: STATUS_STYLE[modal.item.status].fg }}>{modal.item.status}</span>
-              <span className="mt-badge">{formatDate(modal.item.deadline)}</span>
+              <span className="mt-badge">{formatDateRange(modal.item.startDate, modal.item.deadline)}</span>
             </div>
             {modal.item.actor && <div className="mt-modal-sub" style={{ marginTop: 8 }}>Assigned to <strong>{modal.item.actor}</strong></div>}
             <div className="mt-modal-actions">
