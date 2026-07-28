@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./supabaseClient.js";
-import { storage, defaultData, STORAGE_KEY, TABLE } from "./lib/storage.js";
+import { storage, defaultData, STORAGE_KEY, TABLE, migrateLegacyTimeline } from "./lib/storage.js";
 import AppShell from "./components/AppShell.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Budget from "./pages/Budget.jsx";
@@ -20,7 +20,13 @@ export default function App() {
     (async () => {
       try {
         const res = await storage.get(STORAGE_KEY);
-        if (!cancelled) setData(res && res.value ? { ...defaultData, ...JSON.parse(res.value) } : defaultData);
+        let merged = res && res.value ? { ...defaultData, ...JSON.parse(res.value) } : defaultData;
+        const migrated = migrateLegacyTimeline(merged);
+        if (migrated) {
+          merged = migrated;
+          storage.set(STORAGE_KEY, JSON.stringify(merged));
+        }
+        if (!cancelled) setData(merged);
       } catch (e) {
         if (!cancelled) setData(defaultData);
       } finally {
@@ -69,7 +75,7 @@ export default function App() {
 
   return (
     <AppShell tab={tab} setTab={setTab} synced={!!supabase}>
-      <Page data={data} update={update} />
+      <Page data={data} update={update} onNavigate={setTab} />
     </AppShell>
   );
 }

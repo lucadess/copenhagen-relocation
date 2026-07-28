@@ -70,28 +70,6 @@ export const MONTHS = [
   { label: "Feb", year: "27", monthIndex: 1, yearNum: 2027 },
 ];
 
-export const GANTT_CATEGORIES = {
-  housing: { label: "Housing", color: "#3A86FF" },
-  career: { label: "Career", color: "#63C174" },
-  admin: { label: "Admin", color: "#A44CD3" },
-  logistics: { label: "Moving", color: "#FF7F3F" },
-  windDown: { label: "NL wind-down", color: "#B8AFA2" },
-};
-
-export const GANTT_PHASES = [
-  { id: "g1", label: "Research relocation options & DK rental market", cat: "housing", start: 0, end: 1 },
-  { id: "g2", label: "Decide: relocation service vs. DIY", cat: "housing", start: 1, end: 1, milestone: true },
-  { id: "g3", label: "NL lease notice & DK contract talks", cat: "admin", start: 0, end: 2 },
-  { id: "g4", label: "Midori's Copenhagen job search", cat: "career", start: 1, end: 6 },
-  { id: "g5", label: "Moving company quotes & booking", cat: "logistics", start: 2, end: 3 },
-  { id: "g6", label: "Apartment hunting & applications", cat: "housing", start: 3, end: 4 },
-  { id: "g7", label: "Sign Copenhagen lease", cat: "housing", start: 4, end: 4, milestone: true },
-  { id: "g8", label: "NL deregistration & utilities cancellation", cat: "windDown", start: 4, end: 4 },
-  { id: "g9", label: "Packing", cat: "logistics", start: 4, end: 4 },
-  { id: "g10", label: "Move + CPR / MitID / tax / bank", cat: "admin", start: 5, end: 5, milestone: true },
-  { id: "g11", label: "Settle in & buffer", cat: "admin", start: 6, end: 6 },
-];
-
 export const STATUS_STYLE = {
   "Open": { bg: "#F1EEE7", fg: "#6B6357" },
   "In progress": { bg: "#FBF0DC", fg: "#9A6B12" },
@@ -101,7 +79,22 @@ export const STATUS_STYLE = {
 
 export const DECISION_STATUS_OPTIONS = ["Open", "In progress", "Decided"];
 export const TASK_STATUS_OPTIONS = ["Open", "In progress", "Done"];
-export const TASK_CATEGORIES = ["Housing", "Administration", "Budget", "Packing", "Travel", "Miscellaneous"];
+
+export const TASK_CATEGORY_COLORS = {
+  Housing: "#3A86FF",
+  Career: "#63C174",
+  Admin: "#A44CD3",
+  Moving: "#FF7F3F",
+  Travel: "#E8A93B",
+  Miscellaneous: "#8A8378",
+};
+export const TASK_CATEGORIES = Object.keys(TASK_CATEGORY_COLORS);
+
+// Mapping used only to migrate the old (pre-unification) Timeline "phase"
+// data, which had a different, smaller set of category keys.
+const LEGACY_PHASE_CATEGORY = {
+  housing: "Housing", career: "Career", admin: "Admin", logistics: "Moving", windDown: "Admin",
+};
 
 export const defaultData = {
   decisions: [
@@ -127,7 +120,19 @@ export const defaultData = {
     },
   ],
   budget: { costs: [], extras: [] },
-  tasks: [],
+  tasks: [
+    { id: "g1", title: "Research relocation options & DK rental market", description: "", actor: "", category: "Housing", status: "Open", deadline: "2026-09-30" },
+    { id: "g2", title: "Decide: relocation service vs. DIY", description: "", actor: "", category: "Housing", status: "Open", deadline: "2026-09-30" },
+    { id: "g3", title: "NL lease notice & DK contract talks", description: "", actor: "", category: "Admin", status: "Open", deadline: "2026-10-31" },
+    { id: "g4", title: "Midori's Copenhagen job search", description: "", actor: "Midori", category: "Career", status: "Open", deadline: "2027-02-28" },
+    { id: "g5", title: "Moving company quotes & booking", description: "", actor: "", category: "Moving", status: "Open", deadline: "2026-11-30" },
+    { id: "g6", title: "Apartment hunting & applications", description: "", actor: "", category: "Housing", status: "Open", deadline: "2026-12-31" },
+    { id: "g7", title: "Sign Copenhagen lease", description: "", actor: "", category: "Housing", status: "Open", deadline: "2026-12-31" },
+    { id: "g8", title: "NL deregistration & utilities cancellation", description: "", actor: "", category: "Admin", status: "Open", deadline: "2026-12-31" },
+    { id: "g9", title: "Packing", description: "", actor: "", category: "Moving", status: "Open", deadline: "2026-12-31" },
+    { id: "g10", title: "Move + CPR / MitID / tax / bank", description: "", actor: "", category: "Admin", status: "Open", deadline: "2027-01-31" },
+    { id: "g11", title: "Settle in & buffer", description: "", actor: "", category: "Admin", status: "Open", deadline: "2027-02-28" },
+  ],
   faq: [
     { id: "f1", question: "How do we get a CPR number?", answer: "Register your address, then apply in person at Borgerservice / International Citizen Service.", url: "https://icitizen.dk" },
     { id: "f2", question: "Where do we search for apartments?", answer: "BoligPortal and Lejebolig are the main sites; Facebook expat groups also help.", url: "https://www.boligportal.dk" },
@@ -135,6 +140,44 @@ export const defaultData = {
     { id: "f4", question: "CPR appointment timing", answer: "Book it as soon as the lease is signed, slots fill up.", url: "" },
   ],
 };
+
+// One-time cleanup for data saved by an earlier version of the app, which
+// tracked roadmap "phases" separately from tasks. Folds any leftover phases
+// into `tasks` (skipping ones already migrated) and drops the old field.
+// Returns null when there's nothing to migrate.
+export function migrateLegacyTimeline(data) {
+  if (!("timeline" in data)) return null;
+  const timeline = data.timeline || [];
+  const existingIds = new Set(data.tasks.map((t) => t.id));
+  const migrated = timeline
+    .filter((p) => !existingIds.has(p.id))
+    .map((p) => {
+      const monthEntry = MONTHS[p.end] ?? MONTHS[p.start] ?? MONTHS[0];
+      const lastDay = new Date(monthEntry.yearNum, monthEntry.monthIndex + 1, 0);
+      const deadline = lastDay.getFullYear() + "-"
+        + String(lastDay.getMonth() + 1).padStart(2, "0") + "-"
+        + String(lastDay.getDate()).padStart(2, "0");
+      return {
+        id: p.id,
+        title: p.label,
+        description: "",
+        actor: "",
+        category: LEGACY_PHASE_CATEGORY[p.cat] || "Miscellaneous",
+        status: "Open",
+        deadline,
+      };
+    });
+  const next = { ...data, tasks: [...data.tasks, ...migrated] };
+  delete next.timeline;
+  return next;
+}
+
+export function monthIndexForDate(dateStr) {
+  if (!dateStr) return -1;
+  const d = new Date(dateStr + "T00:00:00");
+  if (Number.isNaN(d.getTime())) return -1;
+  return MONTHS.findIndex((m) => m.yearNum === d.getFullYear() && m.monthIndex === d.getMonth());
+}
 
 export function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Plus, Trash2, Pencil, Check } from "lucide-react";
 import Card from "../components/Card.jsx";
-import { uid, formatDate, TASK_STATUS_OPTIONS, TASK_CATEGORIES, STATUS_STYLE } from "../lib/storage.js";
+import { uid, formatDate, TASK_STATUS_OPTIONS, TASK_CATEGORIES, TASK_CATEGORY_COLORS, STATUS_STYLE } from "../lib/storage.js";
 
 function initials(name) {
   if (!name) return "?";
@@ -13,18 +13,22 @@ function isOverdue(t) {
   return new Date(t.deadline + "T23:59:59") < new Date();
 }
 
-const emptyForm = { title: "", description: "", deadline: "", actor: "", category: TASK_CATEGORIES[0], status: "Open" };
-
 export default function Tasks({ data, update }) {
-  const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
   const [statusFilter, setStatusFilter] = useState("All");
   const [categoryFilter, setCategoryFilter] = useState("All");
 
   function addTask() {
-    if (!form.title) return;
-    update({ tasks: [{ id: uid(), ...form }, ...data.tasks] });
-    setForm(emptyForm);
+    const newId = uid();
+    update({
+      tasks: [...data.tasks, {
+        id: newId, title: "New task", description: "", deadline: "", actor: "",
+        category: TASK_CATEGORIES[0], status: "Open",
+      }],
+    });
+    setStatusFilter("All");
+    setCategoryFilter("All");
+    setEditingId(newId);
   }
   function setTask(id, patch) {
     update({ tasks: data.tasks.map((t) => (t.id === id ? { ...t, ...patch } : t)) });
@@ -46,24 +50,6 @@ export default function Tasks({ data, update }) {
       <p className="mt-page-intro">Keep the move organized — who's doing what, and by when.</p>
 
       <Card>
-        <h2 className="mt-card-title">Add a task</h2>
-        <div className="mt-form-row">
-          <input className="mt-input" placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-          <input className="mt-input" placeholder="Actor" value={form.actor} onChange={(e) => setForm({ ...form, actor: e.target.value })} />
-        </div>
-        <div className="mt-form-row">
-          <textarea className="mt-input mt-textarea" placeholder="Description (optional)" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-        </div>
-        <div className="mt-form-row">
-          <input className="mt-input" type="date" value={form.deadline} onChange={(e) => setForm({ ...form, deadline: e.target.value })} />
-          <select className="mt-input" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
-            {TASK_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-          <button className="mt-btn primary" onClick={addTask}><Plus size={14} /> Add</button>
-        </div>
-      </Card>
-
-      <Card>
         <div className="mt-task-filters">
           <select className="mt-input" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="All">All statuses</option>
@@ -77,15 +63,19 @@ export default function Tasks({ data, update }) {
 
         <div style={{ marginTop: 12 }}>
           {filtered.map((t) => (
-            <div key={t.id} className="mt-task-row">
+            <div
+              key={t.id}
+              className="mt-task-row"
+              style={{ borderLeftColor: editingId === t.id ? "transparent" : TASK_CATEGORY_COLORS[t.category] }}
+            >
               {editingId === t.id ? (
                 <div style={{ width: "100%" }}>
                   <div className="mt-form-row">
-                    <input className="mt-input" value={t.title} onChange={(e) => setTask(t.id, { title: e.target.value })} />
+                    <input className="mt-input" value={t.title} onChange={(e) => setTask(t.id, { title: e.target.value })} placeholder="Title" />
                     <input className="mt-input" value={t.actor} onChange={(e) => setTask(t.id, { actor: e.target.value })} placeholder="Actor" />
                   </div>
                   <div className="mt-form-row">
-                    <textarea className="mt-input mt-textarea" value={t.description} onChange={(e) => setTask(t.id, { description: e.target.value })} />
+                    <textarea className="mt-input mt-textarea" value={t.description} onChange={(e) => setTask(t.id, { description: e.target.value })} placeholder="Description (optional)" />
                   </div>
                   <div className="mt-form-row">
                     <input className="mt-input" type="date" value={t.deadline} onChange={(e) => setTask(t.id, { deadline: e.target.value })} />
@@ -104,18 +94,25 @@ export default function Tasks({ data, update }) {
               ) : (
                 <>
                   <div className="mt-task-header">
-                    <span className="mt-actor-badge">{initials(t.actor)}</span>
+                    <span className="mt-actor-badge" style={{ background: TASK_CATEGORY_COLORS[t.category] }}>{initials(t.actor)}</span>
                     <div className="mt-task-main">
                       <div className="mt-task-title">{t.title}</div>
                       {t.description && <div className="mt-task-desc">{t.description}</div>}
                     </div>
                   </div>
                   <div className="mt-task-meta">
-                    <span className="mt-badge">{t.category}</span>
+                    <span
+                      className="mt-badge"
+                      style={{ background: `color-mix(in srgb, ${TASK_CATEGORY_COLORS[t.category]} 18%, white)`, color: TASK_CATEGORY_COLORS[t.category] }}
+                    >
+                      {t.category}
+                    </span>
                     <span className="mt-badge" style={{ background: STATUS_STYLE[t.status].bg, color: STATUS_STYLE[t.status].fg }}>{t.status}</span>
                     <span className={"mt-task-deadline" + (isOverdue(t) ? " overdue" : "")}>{formatDate(t.deadline)}</span>
-                    <button className="mt-icon-btn" onClick={() => setEditingId(t.id)}><Pencil size={14} /></button>
-                    <button className="mt-icon-btn" onClick={() => removeTask(t.id)}><Trash2 size={14} /></button>
+                    <div className="mt-task-actions">
+                      <button className="mt-icon-btn" onClick={() => setEditingId(t.id)}><Pencil size={14} /></button>
+                      <button className="mt-icon-btn" onClick={() => removeTask(t.id)}><Trash2 size={14} /></button>
+                    </div>
                   </div>
                 </>
               )}
@@ -124,6 +121,7 @@ export default function Tasks({ data, update }) {
           {filtered.length === 0 && <div className="mt-empty">No tasks match these filters.</div>}
         </div>
       </Card>
+      <button className="mt-btn primary" onClick={addTask}><Plus size={14} /> Add task</button>
     </div>
   );
 }
