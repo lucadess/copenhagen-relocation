@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { LayoutDashboard, Wallet, ListChecks, ListTodo, HelpCircle, LogOut } from "lucide-react";
 import Modal from "./Modal.jsx";
 
@@ -98,17 +98,14 @@ export default function AppShell({ tab, setTab, synced, authed, onLogin, onLogou
       </header>
 
       <div className="mt-content-area">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={tab}
-            initial={reduceMotion ? false : { opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={reduceMotion ? undefined : { opacity: 0 }}
-            transition={{ duration: 0.18, ease: "easeOut" }}
-          >
-            {children}
-          </motion.div>
-        </AnimatePresence>
+        <motion.div
+          key={tab}
+          initial={reduceMotion ? false : { opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.18, ease: "easeOut" }}
+        >
+          {children}
+        </motion.div>
 
         <nav className="mt-bottom-nav">
           {NAV.map((n) => (

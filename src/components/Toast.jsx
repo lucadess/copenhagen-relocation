@@ -17,12 +17,24 @@ export default function Toast({ toast, onDone }) {
           <motion.div
             key={toast.id}
             className="mt-toast"
-            initial={reduceMotion ? false : { opacity: 0, y: -16 }}
+            initial={{ opacity: 0, y: -16 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={reduceMotion ? undefined : { opacity: 0, y: -16 }}
-            transition={{ duration: 0.18, ease: "easeOut" }}
+            exit={{ opacity: 0, y: -16 }}
+            transition={reduceMotion ? { duration: 0 } : { type: "spring", bounce: 0, duration: 0.3 }}
           >
-            {toast.message}
+            <span>{toast.message}</span>
+            {toast.actionLabel && (
+              <button
+                type="button"
+                className="mt-toast-action"
+                onClick={() => {
+                  toast.onAction?.();
+                  onDone();
+                }}
+              >
+                {toast.actionLabel}
+              </button>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

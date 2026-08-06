@@ -3,7 +3,7 @@ import { Plus, Trash2, Pencil, Check } from "lucide-react";
 import Card from "../components/Card.jsx";
 import { BUCKETS, BASE_BUDGET, uid } from "../lib/storage.js";
 
-export default function Budget({ data, update, authed }) {
+export default function Budget({ data, update, authed, showUndo }) {
   const [costForm, setCostForm] = useState({ description: "", amount: "", category: "moveIn" });
   const [extraForm, setExtraForm] = useState({ description: "", amount: "" });
   const [editingCostId, setEditingCostId] = useState(null);
@@ -36,7 +36,13 @@ export default function Budget({ data, update, authed }) {
     }
   }
   function removeCost(id) {
-    update({ budget: { ...data.budget, costs: data.budget.costs.filter((c) => c.id !== id) } });
+    const removed = data.budget.costs.find((c) => c.id === id);
+    const ok = update({ budget: { ...data.budget, costs: data.budget.costs.filter((c) => c.id !== id) } });
+    if (ok && removed) {
+      showUndo?.(`"${removed.description}" deleted`, () => {
+        update((current) => ({ budget: { ...current.budget, costs: [...current.budget.costs, removed] } }));
+      });
+    }
     if (editingCostId === id) {
       setEditingCostId(null);
       setCostDraft(null);
@@ -63,7 +69,13 @@ export default function Budget({ data, update, authed }) {
     }
   }
   function removeExtra(id) {
-    update({ budget: { ...data.budget, extras: data.budget.extras.filter((e) => e.id !== id) } });
+    const removed = data.budget.extras.find((e) => e.id === id);
+    const ok = update({ budget: { ...data.budget, extras: data.budget.extras.filter((e) => e.id !== id) } });
+    if (ok && removed) {
+      showUndo?.(`"${removed.description}" deleted`, () => {
+        update((current) => ({ budget: { ...current.budget, extras: [...current.budget.extras, removed] } }));
+      });
+    }
     if (editingExtraId === id) {
       setEditingExtraId(null);
       setExtraDraft(null);

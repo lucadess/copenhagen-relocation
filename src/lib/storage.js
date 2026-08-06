@@ -51,7 +51,7 @@ export const storage = {
 /* Constants                                                       */
 /* ============================================================== */
 
-export const MOVE_DAY = new Date(2027, 0, 15);
+export const DEFAULT_MOVE_DATE = "2027-01-15";
 export const BASE_BUDGET = 25000;
 
 export const BUCKETS = [
@@ -90,6 +90,11 @@ export const TASK_CATEGORY_COLORS = {
 };
 export const TASK_CATEGORIES = Object.keys(TASK_CATEGORY_COLORS);
 
+export const TASK_ACTORS = ["Milu", "Luca", "Midori", "Other"];
+// Hand-picked instead of auto-derived initials so Milu and Midori (both
+// starting with "Mi") stay visually distinct in the actor badge.
+export const TASK_ACTOR_INITIALS = { Milu: "ML", Luca: "LC", Midori: "MD", Other: "?" };
+
 // Mapping used only to migrate the old (pre-unification) Timeline "phase"
 // data, which had a different, smaller set of category keys.
 const LEGACY_PHASE_CATEGORY = {
@@ -97,6 +102,7 @@ const LEGACY_PHASE_CATEGORY = {
 };
 
 export const defaultData = {
+  moveDate: DEFAULT_MOVE_DATE,
   decisions: [
     {
       id: "d1", title: "Relocation service or DIY apartment search?", deadline: "2026-09-30", status: "Open",

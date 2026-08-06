@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { ListChecks, Circle, CheckCircle2 } from "lucide-react";
+import { ListChecks, Circle, CheckCircle2, Pencil, Check } from "lucide-react";
 import Card from "../components/Card.jsx";
 import Modal from "../components/Modal.jsx";
 import {
-  MOVE_DAY, BASE_BUDGET, MONTHS, TASK_CATEGORY_COLORS, formatDate, formatDateRange, monthIndexForDate,
+  DEFAULT_MOVE_DATE, BASE_BUDGET, MONTHS, TASK_CATEGORY_COLORS, formatDate, formatDateRange, monthIndexForDate,
   STATUS_STYLE,
 } from "../lib/storage.js";
 
@@ -51,10 +51,22 @@ function ProgressBar({ pct }) {
   );
 }
 
-export default function Dashboard({ data, onNavigate }) {
+export default function Dashboard({ data, update, onNavigate, authed }) {
   const [modal, setModal] = useState(null);
+  const [editingMoveDate, setEditingMoveDate] = useState(false);
+  const [moveDateDraft, setMoveDateDraft] = useState("");
 
-  const daysLeft = daysUntil(MOVE_DAY);
+  const moveDate = data.moveDate || DEFAULT_MOVE_DATE;
+  const daysLeft = daysUntil(new Date(moveDate + "T00:00:00"));
+
+  function startEditMoveDate() {
+    setMoveDateDraft(moveDate);
+    setEditingMoveDate(true);
+  }
+  function confirmMoveDate() {
+    const ok = update({ moveDate: moveDateDraft });
+    if (ok) setEditingMoveDate(false);
+  }
 
   const totalCosts = data.budget.costs.reduce((s, c) => s + Number(c.amount || 0), 0);
   const totalExtras = data.budget.extras.reduce((s, e) => s + Number(e.amount || 0), 0);
@@ -115,8 +127,21 @@ export default function Dashboard({ data, onNavigate }) {
       <div className="mt-top-row">
         <div className="mt-stat-row">
           <Card className="mt-stat-card">
-            <div className="mt-stat-num">{daysLeft}</div>
-            <div className="mt-stat-label">days to move day</div>
+            {editingMoveDate ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <label className="mt-field-label">Move day</label>
+                <input className="mt-input" type="date" value={moveDateDraft} onChange={(e) => setMoveDateDraft(e.target.value)} />
+                <button className="mt-icon-btn" onClick={confirmMoveDate} style={{ alignSelf: "flex-start" }}><Check size={14} /></button>
+              </div>
+            ) : (
+              <>
+                <div className="mt-stat-num">{daysLeft}</div>
+                <div className="mt-stat-label">days to move day · {formatDate(moveDate)}</div>
+                {authed && (
+                  <button className="mt-icon-btn" onClick={startEditMoveDate} style={{ marginTop: 8, alignSelf: "flex-start" }}><Pencil size={12} /></button>
+                )}
+              </>
+            )}
           </Card>
         </div>
 

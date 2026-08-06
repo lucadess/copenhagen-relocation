@@ -19,19 +19,19 @@ export default function Modal({ open, onClose, title, accent, children }) {
       {open && (
         <motion.div
           className="mt-modal-backdrop"
-          initial={reduceMotion ? false : { opacity: 0 }}
+          initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          exit={reduceMotion ? undefined : { opacity: 0 }}
-          transition={{ duration: 0.15, ease: "easeOut" }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: reduceMotion ? 0 : 0.15, ease: "easeOut" }}
           onClick={onClose}
         >
           <motion.div
             className="mt-modal"
             style={{ "--accent": accent }}
-            initial={reduceMotion ? false : { opacity: 0, y: 12, scale: 0.98 }}
+            initial={{ opacity: 0, y: 12, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={reduceMotion ? undefined : { opacity: 0, y: 12, scale: 0.98 }}
-            transition={{ duration: 0.16, ease: "easeOut" }}
+            exit={{ opacity: 0, y: 12, scale: 0.98 }}
+            transition={reduceMotion ? { duration: 0 } : { type: "spring", bounce: 0, duration: 0.32 }}
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"

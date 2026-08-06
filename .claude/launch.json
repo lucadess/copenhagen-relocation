@@ -6,6 +6,17 @@
       "runtimeExecutable": "/opt/homebrew/Cellar/node/26.5.0/bin/node",
       "runtimeArgs": ["node_modules/vite/bin/vite.js"],
       "port": 5173
+    },
+    {
+      "name": "rust-en-vreugd-opslag",
+      "runtimeExecutable": "/opt/homebrew/Cellar/node/26.5.0/bin/node",
+      "runtimeArgs": [
+        "/Users/luca/Documents/Coding/rust-en-vreugd-opslag/node_modules/vite/bin/vite.js",
+        "/Users/luca/Documents/Coding/rust-en-vreugd-opslag",
+        "--port",
+        "5175"
+      ],
+      "port": 5175
     }
   ]
 }

@@ -44,7 +44,7 @@ function DecisionForm({ draft, onChange, onAddOption, onOptionText, onRemoveOpti
   );
 }
 
-export default function Decisions({ data, update, authed }) {
+export default function Decisions({ data, update, authed, showUndo }) {
   const [editingId, setEditingId] = useState(null);
   const [draft, setDraft] = useState(null);
   const [isNew, setIsNew] = useState(false);
@@ -95,7 +95,13 @@ export default function Decisions({ data, update, authed }) {
       stopEditing();
       return;
     }
-    update({ decisions: data.decisions.filter((d) => d.id !== id) });
+    const removed = data.decisions.find((d) => d.id === id);
+    const ok = update({ decisions: data.decisions.filter((d) => d.id !== id) });
+    if (ok && removed) {
+      showUndo?.(`"${removed.title}" deleted`, () => {
+        update((current) => ({ decisions: [...current.decisions, removed] }));
+      });
+    }
     if (editingId === id) stopEditing();
   }
   function selectFinal(d, optId) {
@@ -110,6 +116,8 @@ export default function Decisions({ data, update, authed }) {
     <div className="mt-page" style={{ "--accent": "var(--accent-decisions)" }}>
       <h1 className="mt-page-title">Decisions</h1>
       <p className="mt-page-intro">Compare your options side by side, mark the final call once you make it.</p>
+
+      {authed && <button className="mt-btn primary" onClick={add}><Plus size={14} /> Add decision</button>}
 
       <div className="mt-stack" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         {isNew && draft && (
@@ -175,7 +183,6 @@ export default function Decisions({ data, update, authed }) {
           );
         })}
       </div>
-      {authed && <button className="mt-btn primary" onClick={add}><Plus size={14} /> Add decision</button>}
     </div>
   );
 }

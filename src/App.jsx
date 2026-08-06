@@ -59,21 +59,25 @@ export default function App() {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  async function persist(next) {
-    setData(next);
-    try {
-      await storage.set(STORAGE_KEY, JSON.stringify(next));
-    } catch (e) {
-      console.error("storage error", e);
-    }
-  }
   function update(patch) {
     if (!authed) {
       setToast({ id: Date.now(), message: "You should be part of the MILU household to make changes." });
       return false;
     }
-    persist({ ...data, ...(typeof patch === "function" ? patch(data) : patch) });
+    // Resolve against the freshest state via the functional updater, not the
+    // `data` closure — a stale closure (e.g. a delayed undo callback, or two
+    // edits racing the realtime sync) would otherwise silently clobber
+    // whatever changed in between.
+    setData((prev) => {
+      const next = { ...prev, ...(typeof patch === "function" ? patch(prev) : patch) };
+      storage.set(STORAGE_KEY, JSON.stringify(next)).catch((e) => console.error("storage error", e));
+      return next;
+    });
     return true;
+  }
+
+  function showUndo(message, onUndo) {
+    setToast({ id: Date.now(), message, actionLabel: "Undo", onAction: onUndo });
   }
 
   function login(username, password) {
@@ -96,7 +100,7 @@ export default function App() {
   return (
     <>
       <AppShell tab={tab} setTab={setTab} synced={!!supabase} authed={authed} onLogin={login} onLogout={logout}>
-        <Page data={data} update={update} onNavigate={setTab} authed={authed} />
+        <Page data={data} update={update} onNavigate={setTab} authed={authed} showUndo={showUndo} />
       </AppShell>
       <Toast toast={toast} onDone={() => setToast(null)} />
     </>

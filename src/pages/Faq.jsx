@@ -20,7 +20,7 @@ function FaqForm({ draft, onChange, onConfirm, onDelete }) {
   );
 }
 
-export default function Faq({ data, update, authed }) {
+export default function Faq({ data, update, authed, showUndo }) {
   const [editingId, setEditingId] = useState(null);
   const [draft, setDraft] = useState(null);
   const [isNew, setIsNew] = useState(false);
@@ -60,7 +60,13 @@ export default function Faq({ data, update, authed }) {
       stopEditing();
       return;
     }
-    update({ faq: data.faq.filter((f) => f.id !== id) });
+    const removed = data.faq.find((f) => f.id === id);
+    const ok = update({ faq: data.faq.filter((f) => f.id !== id) });
+    if (ok && removed) {
+      showUndo?.(`"${removed.question}" deleted`, () => {
+        update((current) => ({ faq: [...current.faq, removed] }));
+      });
+    }
     if (editingId === id) stopEditing();
   }
 
@@ -78,6 +84,8 @@ export default function Faq({ data, update, authed }) {
         <Search size={16} />
         <input placeholder="Search the FAQ…" value={query} onChange={(e) => setQuery(e.target.value)} />
       </div>
+
+      {authed && <button className="mt-btn primary" onClick={add}><Plus size={14} /> Add entry</button>}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {isNew && draft && (
@@ -143,7 +151,6 @@ export default function Faq({ data, update, authed }) {
         })}
         {filtered.length === 0 && !isNew && <div className="mt-empty">No matching entries.</div>}
       </div>
-      {authed && <button className="mt-btn primary" onClick={add}><Plus size={14} /> Add entry</button>}
     </div>
   );
 }
